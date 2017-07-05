@@ -12,7 +12,6 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.stereotype.Component;
 
-import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
 
 /**
@@ -29,13 +28,6 @@ public class ZkProcessConfigure implements BeanPostProcessor
         client.start();
     }
 
-    public static void main(String[] args) throws Exception
-    {
-        String s = "/springBoot";
-
-
-
-    }
 
 
     /**
@@ -51,7 +43,7 @@ public class ZkProcessConfigure implements BeanPostProcessor
 
         if (annotation != null)
         {
-            Field[] fields = o.getClass().getFields();
+            Field[] fields = o.getClass().getDeclaredFields();
             for (Field field : fields)
             {
                 ZkValue declaredAnnotation = field.getDeclaredAnnotation(ZkValue.class);
