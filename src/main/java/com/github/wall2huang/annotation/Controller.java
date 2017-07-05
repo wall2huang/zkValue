@@ -8,9 +8,12 @@ import org.springframework.web.bind.annotation.RestController;
  * author : Administrator
  **/
 @RestController
-@ZkValue(path = "/zoo", value = "haha")
+@ZkValue()
 public class Controller
 {
+    @ZkValue(path = "/springBoot/test", value = "哈哈哈哈")
+    private String zkValue;
+
 
 
 }
