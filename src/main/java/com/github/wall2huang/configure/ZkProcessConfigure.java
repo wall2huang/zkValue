@@ -5,10 +5,7 @@ package com.github.wall2huang.configure;/**
 import com.github.wall2huang.annotation.ZkValue;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.framework.api.BackgroundCallback;
-import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.recipes.cache.NodeCache;
-import org.apache.curator.framework.recipes.cache.NodeCacheListener;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.zookeeper.CreateMode;
 import org.springframework.beans.BeansException;
@@ -45,7 +42,7 @@ public class ZkProcessConfigure implements BeanPostProcessor
         if (annotation != null)
         {
             Field[] fields = o.getClass().getDeclaredFields();
-            for (Field field : fields)
+            for (final Field field : fields)
             {
                 ZkValue declaredAnnotation = field.getDeclaredAnnotation(ZkValue.class);
                 if (declaredAnnotation != null)
@@ -70,17 +67,13 @@ public class ZkProcessConfigure implements BeanPostProcessor
                         }
 
                         //监听本节点的变化
-                        NodeCache nodeCache = new NodeCache(client, path);
+                        final NodeCache nodeCache = new NodeCache(client, path);
                         nodeCache.getListenable()
-                                .addListener(new NodeCacheListener()
+                                .addListener(() ->
                                 {
-                                    @Override
-                                    public void nodeChanged() throws Exception
-                                    {
-                                        String currentData = new String(nodeCache.getCurrentData().getData(), "UTF-8");
-                                        field.setAccessible(true);
-                                        field.set(o, currentData);
-                                    }
+                                    String currentData = new String(nodeCache.getCurrentData().getData(), "UTF-8");
+                                    field.setAccessible(true);
+                                    field.set(o, currentData);
                                 });
                         nodeCache.start();
                     } catch (Exception e)
