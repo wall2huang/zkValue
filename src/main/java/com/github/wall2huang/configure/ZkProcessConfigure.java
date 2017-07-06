@@ -5,9 +5,12 @@ package com.github.wall2huang.configure;/**
 import com.github.wall2huang.annotation.ZkValue;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.api.BackgroundCallback;
+import org.apache.curator.framework.api.CuratorEvent;
+import org.apache.curator.framework.recipes.cache.NodeCache;
+import org.apache.curator.framework.recipes.cache.NodeCacheListener;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.KeeperException;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.stereotype.Component;
@@ -29,7 +32,6 @@ public class ZkProcessConfigure implements BeanPostProcessor
     }
 
 
-
     /**
      * @param o 初始化后的bean
      * @param s bean的名称
@@ -40,7 +42,6 @@ public class ZkProcessConfigure implements BeanPostProcessor
     public Object postProcessBeforeInitialization(Object o, String s) throws BeansException
     {
         ZkValue annotation = o.getClass().getDeclaredAnnotation(ZkValue.class);
-
         if (annotation != null)
         {
             Field[] fields = o.getClass().getDeclaredFields();
@@ -53,29 +54,39 @@ public class ZkProcessConfigure implements BeanPostProcessor
                     String value = declaredAnnotation.value();
                     try
                     {
-                        String data = new String(client.getData().forPath(path), "UTF-8");
-                        field.setAccessible(true);
-                        field.set(o, data);
-                        System.out.println(field.get(o));
-
-                    } catch (KeeperException.NoNodeException e)
-                    {
-                        try
+                        if( client.checkExists().forPath(path) == null)
                         {
                             client.create()
                                     .creatingParentsIfNeeded()
                                     .withMode(CreateMode.PERSISTENT)
-                                    .forPath(s, value.getBytes("UTF-8"));
-                        } catch (Exception e1)
+                                    .forPath(path, value.getBytes("UTF-8"));
+                        }
+                        else
                         {
-                            e.printStackTrace();
+                            String data = new String(client.getData()
+                                    .forPath(path), "UTF-8");
+                            field.setAccessible(true);
+                            field.set(o, data);
                         }
 
+                        //监听本节点的变化
+                        NodeCache nodeCache = new NodeCache(client, path);
+                        nodeCache.getListenable()
+                                .addListener(new NodeCacheListener()
+                                {
+                                    @Override
+                                    public void nodeChanged() throws Exception
+                                    {
+                                        String currentData = new String(nodeCache.getCurrentData().getData(), "UTF-8");
+                                        field.setAccessible(true);
+                                        field.set(o, currentData);
+                                    }
+                                });
+                        nodeCache.start();
                     } catch (Exception e)
                     {
                         e.printStackTrace();
                     }
-
                 }
             }
         }
