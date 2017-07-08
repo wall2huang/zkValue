@@ -28,7 +28,6 @@ public class ZkProcessConfigure implements BeanPostProcessor
         client.start();
     }
 
-
     /**
      * @param o 初始化后的bean
      * @param s bean的名称
